@@ -1,0 +1,139 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "JMH · 一键运行到模拟器",
+      "detail": "启动模拟器 → 构建 Debug → 安装 → 启动应用",
+      "type": "shell",
+      "command": "powershell",
+      "args": [
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        "${workspaceFolder}\\scripts\\run-app.ps1"
+      ],
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared",
+        "clear": true
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "JMH · 启动模拟器",
+      "detail": "启动 AVD 并等待系统就绪（自动探测 SDK 路径）",
+      "type": "shell",
+      "command": "powershell",
+      "args": [
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        "${workspaceFolder}\\scripts\\start-emulator.ps1"
+      ],
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared",
+        "clear": true
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "JMH · 构建 Debug APK",
+      "type": "shell",
+      "command": "${workspaceFolder}\\gradlew.bat",
+      "args": ["assembleDebug", "--console=plain"],
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared",
+        "clear": true
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "JMH · 构建 Release APK",
+      "detail": "混淆压缩后归集到 apk/ 目录",
+      "type": "shell",
+      "command": "powershell",
+      "args": [
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        "${workspaceFolder}\\scripts\\build-apk.ps1"
+      ],
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared",
+        "clear": true
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "JMH · 只安装到模拟器",
+      "detail": "跳过构建，直接安装已有 APK",
+      "type": "shell",
+      "command": "powershell",
+      "args": [
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        "${workspaceFolder}\\scripts\\install-apk.ps1"
+      ],
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared",
+        "clear": true
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "JMH · 运行加密测试",
+      "detail": "设备端测试：加解密往返 / 错误密钥 / 防篡改 / 改密码 / 业务链路",
+      "type": "shell",
+      "command": "${workspaceFolder}\\gradlew.bat",
+      "args": ["connectedDebugAndroidTest", "--console=plain"],
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared",
+        "clear": true
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "JMH · 查看应用日志",
+      "detail": "过滤崩溃与 JMH 相关输出",
+      "type": "shell",
+      "command": "powershell",
+      "args": [
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        "${workspaceFolder}\\scripts\\logcat.ps1"
+      ],
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "JMH · 停止模拟器",
+      "type": "shell",
+      "command": "powershell",
+      "args": [
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        "${workspaceFolder}\\scripts\\stop-emulator.ps1"
+      ],
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      },
+      "problemMatcher": []
+    }
+  ]
+}

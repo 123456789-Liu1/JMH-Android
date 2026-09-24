@@ -1,0 +1,13 @@
+{
+  "recommendations": [
+    "fwcd.kotlin",
+    "vscjava.vscode-gradle",
+    "redhat.vscode-xml",
+    "toroxx.vscode-avdmanager",
+    "diemasmichiels.emulate",
+    "jawa0919.adb-helper",
+    "abhiagr.logcat",
+    "surendrajat.apklab",
+    "usernamehw.errorlens"
+  ]
+}

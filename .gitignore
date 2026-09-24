@@ -1,0 +1,33 @@
+# ---------- Android / Gradle ----------
+*.iml
+.gradle/
+/local.properties
+/.idea/
+.DS_Store
+/build
+/app/build
+/captures
+.externalNativeBuild
+.cxx
+*.apk
+*.aab
+*.ap_
+*.dex
+
+# ---------- 签名文件（切勿提交）----------
+*.jks
+*.keystore
+!debug.keystore
+
+# ---------- 打包产物输出目录 ----------
+/apk/
+
+# ---------- 工具与个人配置 ----------
+.codebuddy/
+.vscode/settings.local.json
+/.avd
+
+# ---------- 日志与临时文件 ----------
+*.log
+*.hprof
+*.tmp

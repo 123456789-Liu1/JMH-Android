@@ -1,0 +1,77 @@
+name: Bug 报告
+description: 应用行为异常、崩溃或功能不符合预期
+title: "[Bug] "
+labels: [ "bug" ]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        感谢反馈！请尽量完整填写，信息越全定位越快。
+
+        **安全漏洞请勿在此提交**，请参阅 [SECURITY.md](../blob/main/SECURITY.md)。
+
+  - type: textarea
+    id: description
+    attributes:
+      label: 问题描述
+      description: 发生了什么？你期望的是什么？
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: 复现步骤
+      placeholder: |
+        1. 打开应用并设置密码
+        2. 点击「添加文件」选择一个视频
+        3. 加密到 90% 时应用退出
+    validations:
+      required: true
+
+  - type: input
+    id: app-version
+    attributes:
+      label: JMH 版本
+      placeholder: 例如 1.0.0（可在设置页查看）
+    validations:
+      required: true
+
+  - type: input
+    id: device
+    attributes:
+      label: 设备与系统版本
+      placeholder: 例如 Pixel 6 / Android 14；或模拟器名称
+    validations:
+      required: true
+
+  - type: dropdown
+    id: storage-mode
+    attributes:
+      label: 存储位置
+      options:
+        - 应用专属目录（默认）
+        - 公共目录（已授权）
+        - 不确定 / 未注意
+    validations:
+      required: false
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: 日志或截图
+      description: |
+        可选但非常有帮助。崩溃日志获取方式：
+        ```
+        adb logcat AndroidRuntime:E JMH:D *:S
+        ```
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: 提交前确认
+      options:
+        - label: 我已搜索过现有 Issue，确认没有重复
+          required: true
