@@ -18,6 +18,8 @@
 *.jks
 *.keystore
 !debug.keystore
+/keystore.properties
+/keystore/
 
 # ---------- 打包产物输出目录 ----------
 /apk/

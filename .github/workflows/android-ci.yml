@@ -25,6 +25,23 @@ jobs:
           distribution: 'temurin'
           cache: gradle
 
+      - name: 配置签名
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: |
+          if [ -z "$KEYSTORE_BASE64" ]; then
+            echo "::warning::未配置签名密钥（KEYSTORE_BASE64），将使用调试签名构建"
+            exit 0
+          fi
+          mkdir -p keystore
+          echo "$KEYSTORE_BASE64" | base64 -d > keystore/jmh-release.jks
+          printf 'storeFile=keystore/jmh-release.jks\nstorePassword=%s\nkeyAlias=%s\nkeyPassword=%s\n' \
+            "$KEYSTORE_PASSWORD" "$KEY_ALIAS" "$KEY_PASSWORD" > keystore.properties
+          echo "签名配置完成"
+
       - name: 赋予 gradlew 执行权限
         run: chmod +x gradlew
 
@@ -33,6 +50,15 @@ jobs:
 
       - name: 构建 Release APK
         run: ./gradlew assembleRelease --stacktrace
+
+      - name: 校验签名一致性
+        run: |
+          APK=app/build/outputs/apk/release/app-release.apk
+          if [ ! -f "$APK" ]; then
+            echo "::error::未找到 Release APK"
+            exit 1
+          fi
+          $ANDROID_SDK_ROOT/build-tools/34.0.0/apksigner verify --print-certs "$APK" | head -5
 
       - name: 上传 Debug APK
         uses: actions/upload-artifact@v4

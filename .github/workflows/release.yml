@@ -24,17 +24,39 @@ jobs:
           distribution: 'temurin'
           cache: gradle
 
+      - name: 配置签名
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: |
+          if [ -z "$KEYSTORE_BASE64" ]; then
+            echo "::error::未配置签名密钥（KEYSTORE_BASE64），无法发布正式版本"
+            exit 1
+          fi
+          mkdir -p keystore
+          echo "$KEYSTORE_BASE64" | base64 -d > keystore/jmh-release.jks
+          printf 'storeFile=keystore/jmh-release.jks\nstorePassword=%s\nkeyAlias=%s\nkeyPassword=%s\n' \
+            "$KEYSTORE_PASSWORD" "$KEY_ALIAS" "$KEY_PASSWORD" > keystore.properties
+          echo "签名配置完成"
+
       - name: 赋予 gradlew 执行权限
         run: chmod +x gradlew
 
       - name: 构建 Release APK
         run: ./gradlew assembleRelease --stacktrace
 
+      - name: 校验签名
+        run: |
+          $ANDROID_SDK_ROOT/build-tools/34.0.0/apksigner verify --print-certs \
+            app/build/outputs/apk/release/app-release.apk | head -5
+
       - name: 重命名产物
         run: |
           mkdir -p release-out
           cp app/build/outputs/apk/release/app-release.apk \
-             release-out/JMH-${GITHUB_REF_NAME}-release.apk
+             release-out/JMH-${GITHUB_REF_NAME}.apk
 
       - name: 创建 GitHub Release
         uses: softprops/action-gh-release@v2
@@ -45,10 +67,8 @@ jobs:
           body: |
             ## 下载
 
-            下载下方 APK 直接安装即可（Android 10 及以上）。
-
-            > 默认使用调试签名便于安装体验，如需长期使用请自行签名。
+            下载下方 APK 直接覆盖安装即可（Android 10 及以上，会保留原有数据与设置）。
 
             ## 校验
 
-            本版本由 GitHub Actions 自动构建，源码对应提交 ${{ github.sha }}。
+            本版本由 GitHub Actions 自动构建并使用固定密钥签名，源码对应提交 ${{ github.sha }}。
