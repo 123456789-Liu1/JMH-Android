@@ -43,7 +43,7 @@ class VaultKeyManager(context: Context) {
         val masterBytes = CryptoBox.randomKeyBytes()
         try {
             val kek = KeyDerivation.deriveKey(password, salt)
-            val wrapped = CryptoBox.wrap(kek, masterBytes, JmhFormat.KEY_AAD)
+            val wrapped = CryptoBox.wrap(kek, masterBytes, JmhFormat.MASTER_KEY_AAD)
             prefs.edit()
                 .putString(KEY_SALT, salt.toBase64())
                 .putString(KEY_WRAPPED_MASTER, wrapped.toBase64())
@@ -107,7 +107,7 @@ class VaultKeyManager(context: Context) {
         return try {
             val newSalt = KeyDerivation.randomBytes(KeyDerivation.SALT_SIZE)
             val newKek = KeyDerivation.deriveKey(newPassword, newSalt)
-            val newWrapped = CryptoBox.wrap(newKek, masterBytes, JmhFormat.KEY_AAD)
+            val newWrapped = CryptoBox.wrap(newKek, masterBytes, JmhFormat.MASTER_KEY_AAD)
             prefs.edit()
                 .putString(KEY_SALT, newSalt.toBase64())
                 .putString(KEY_WRAPPED_MASTER, newWrapped.toBase64())
@@ -123,7 +123,7 @@ class VaultKeyManager(context: Context) {
         val salt = prefs.getString(KEY_SALT, null)?.fromBase64() ?: return null
         val wrapped = prefs.getString(KEY_WRAPPED_MASTER, null)?.fromBase64() ?: return null
         val kek = KeyDerivation.deriveKey(password, salt)
-        return CryptoBox.unwrap(kek, wrapped, JmhFormat.KEY_AAD)
+        return CryptoBox.unwrap(kek, wrapped, JmhFormat.MASTER_KEY_AAD)
     }
 
     private fun ByteArray.toBase64(): String = Base64.getEncoder().encodeToString(this)

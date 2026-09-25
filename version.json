@@ -1,0 +1,8 @@
+{
+  "versionCode": 3,
+  "versionName": "2.0.0",
+  "downloadUrl": "https://github.com/123456789-Liu1/JMH-Android/releases/download/v2.0.0/JMH-v2.0.0.apk",
+  "releaseUrl": "https://github.com/123456789-Liu1/JMH-Android/releases/latest",
+  "releaseNotes": "· 新增加密通信：可将文件导出为带独立密码的加密文件，发送给他人\n· 新增导入功能：输入分享密码即可把他人发来的加密文件收进金库\n· 新增检查更新：启动时自动检查，也可在设置中手动检查\n· 分享密码强制 12 位复杂密码，连续输错会自动延长重试间隔\n· 修复顶部按钮被状态栏遮挡的问题",
+  "publishedAt": "2026-09-25"
+}

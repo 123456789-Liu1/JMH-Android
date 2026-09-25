@@ -1,6 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
+    <!--
+        网络权限仅用于「检查更新」：请求仓库中的一个静态 JSON 文件并下载新版 APK。
+        应用不会上传任何文件、密码或设备信息，加密相关功能完全离线运行。
+    -->
+    <uses-permission android:name="android.permission.INTERNET" />
+
+    <!-- 用于在应用内下载新版 APK 后调起系统安装器 -->
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
+
     <application
         android:allowBackup="false"
         android:icon="@mipmap/ic_launcher"

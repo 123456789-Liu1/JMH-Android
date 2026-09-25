@@ -1,6 +1,7 @@
 package com.jmh.app.ui.screens
 
 import android.content.Intent
+import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
@@ -177,6 +178,26 @@ fun SettingsScreen(
             SectionTitle("其他")
 
             SettingRow(
+                title = "检查更新",
+                subtitle = "当前版本 ${viewModel.currentVersionName} · 点击检查是否有新版本",
+                onClick = { viewModel.manualCheckUpdate() }
+            )
+
+            SettingRow(
+                title = "项目主页",
+                subtitle = "在浏览器中打开 GitHub 仓库（可手动下载最新版）",
+                onClick = {
+                    runCatching {
+                        context.startActivity(
+                            Intent(Intent.ACTION_VIEW, Uri.parse(viewModel.repoUrl))
+                        )
+                    }.onFailure {
+                        viewModel.snackbar = "无法打开浏览器"
+                    }
+                }
+            )
+
+            SettingRow(
                 title = "清理预览缓存",
                 subtitle = "删除解密预览时产生的临时明文文件",
                 onClick = { viewModel.clearPreviewCache() }
@@ -184,7 +205,7 @@ fun SettingsScreen(
 
             SettingRow(
                 title = "关于 JMH",
-                subtitle = "版本 1.0 · 本地加密文件保险箱",
+                subtitle = "版本 ${viewModel.currentVersionName} · 本地加密文件保险箱",
                 onClick = { showAbout = true }
             )
 
@@ -267,8 +288,11 @@ fun SettingsScreen(
                             "· 加密算法：AES-256-GCM\n" +
                             "· 密钥派生：PBKDF2-HMAC-SHA256（15 万次迭代）\n" +
                             "· 密钥分层：主密钥由密码保护，每个文件独立数据密钥\n" +
-                            "· 所有数据仅保存在本机，无任何联网上传\n\n" +
-                            "版本 1.0"
+                            "· 加密通信：可将文件导出为带独立密码的分享文件\n" +
+                            "· 所有加密文件仅保存在本机\n" +
+                            "· 网络仅用于检查更新，不上传任何数据\n\n" +
+                            "版本 ${viewModel.currentVersionName}\n" +
+                            viewModel.repoUrl
                 )
             },
             confirmButton = {

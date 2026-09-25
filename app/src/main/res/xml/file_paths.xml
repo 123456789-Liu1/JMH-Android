@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <paths>
     <cache-path name="preview" path="preview/" />
+    <cache-path name="update" path="update/" />
     <external-files-path name="vault" path="JMH/" />
 </paths>

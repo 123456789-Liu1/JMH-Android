@@ -34,6 +34,9 @@ import com.jmh.app.ui.screens.PreviewScreen
 import com.jmh.app.ui.screens.SettingsScreen
 import com.jmh.app.ui.screens.SetupPasswordScreen
 import com.jmh.app.ui.screens.UnlockScreen
+import com.jmh.app.ui.screens.UpdateAvailableDialog
+import com.jmh.app.ui.screens.UpdateFailedDialog
+import com.jmh.app.ui.screens.UpToDateDialog
 import com.jmh.app.ui.screens.VaultListScreen
 import com.jmh.app.ui.theme.JmhTheme
 import java.io.File
@@ -105,6 +108,11 @@ private fun JmhApp() {
             snackbarHostState.showSnackbar(message)
             viewModel.snackbar = null
         }
+    }
+
+    // 启动时静默检查更新：失败不会打扰用户，仅在有新版本时弹窗
+    LaunchedEffect(Unit) {
+        viewModel.autoCheckUpdate()
     }
 
     /** 需要解锁的页面统一走这里 */
@@ -213,6 +221,33 @@ private fun JmhApp() {
                     treePicker.launch(null)
                 }
             )
+        }
+
+        // 发现新版本
+        viewModel.availableUpdate?.let { info ->
+            UpdateAvailableDialog(
+                info = info,
+                currentVersion = viewModel.currentVersionName,
+                downloadProgress = viewModel.updateDownloadProgress,
+                onDismiss = { viewModel.dismissUpdateDialog() },
+                onUpdate = { viewModel.downloadAndInstallUpdate() }
+            )
+        }
+
+        // 手动检查结果
+        when (val state = viewModel.updateCheckState) {
+            is MainViewModel.UpdateCheckState.UpToDate -> UpToDateDialog(
+                version = viewModel.currentVersionName,
+                onDismiss = { viewModel.dismissUpdateCheckState() }
+            )
+
+            is MainViewModel.UpdateCheckState.Failed -> UpdateFailedDialog(
+                message = state.message,
+                onDismiss = { viewModel.dismissUpdateCheckState() },
+                onRetry = { viewModel.manualCheckUpdate() }
+            )
+
+            null -> Unit
         }
     }
 }

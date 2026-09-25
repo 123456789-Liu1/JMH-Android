@@ -47,6 +47,20 @@ class VaultStorage(private val context: Context) {
         }
 
     /**
+     * 默认导出文件夹（分享文件的保存位置）。
+     * 由用户在导出时勾选「设为默认导出文件夹」后记住。
+     */
+    var defaultExportDir: Uri?
+        get() = prefs.getString(KEY_EXPORT_DIR, null)
+            ?.let { runCatching { Uri.parse(it) }.getOrNull() }
+        set(value) {
+            prefs.edit().apply {
+                if (value == null) remove(KEY_EXPORT_DIR)
+                else putString(KEY_EXPORT_DIR, value.toString())
+            }.apply()
+        }
+
+    /**
      * 当前生效的金库目录。
      * 若选择了公共目录但授权失效，则自动回退到应用专属目录。
      */
@@ -88,6 +102,7 @@ class VaultStorage(private val context: Context) {
         private const val KEY_MODE = "vault_mode"
         private const val KEY_TREE_URI = "vault_tree_uri"
         private const val KEY_PROMPT_SHOWN = "location_prompt_shown"
+        private const val KEY_EXPORT_DIR = "default_export_dir"
         private const val MODE_PRIVATE_VALUE = "private"
         private const val MODE_PUBLIC_VALUE = "public"
     }

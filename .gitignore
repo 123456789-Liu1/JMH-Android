@@ -33,3 +33,9 @@
 *.log
 *.hprof
 *.tmp
+
+# ---------- 调试用临时文件（UI 层级 dump / 截图）----------
+/.v*.xml
+/.w*.xml
+/.x*.xml
+/.scr.png

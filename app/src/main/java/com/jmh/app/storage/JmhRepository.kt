@@ -4,6 +4,7 @@ import android.content.Context
 import android.net.Uri
 import android.provider.OpenableColumns
 import android.webkit.MimeTypeMap
+import androidx.documentfile.provider.DocumentFile
 import com.jmh.app.crypto.JmhCryptor
 import com.jmh.app.crypto.JmhFormat
 import com.jmh.app.crypto.JmhMeta
@@ -178,6 +179,159 @@ class JmhRepository(private val context: Context) {
         }
     }
 
+    // ---------------------------------------------------------- 导出为分享文件
+
+    /**
+     * 把一个金库文件导出为**分享文件**（使用独立的分享密码保护），便于发送给他人。
+     *
+     * 流程：主密钥解密 → 分享密码重新加密 → 写入用户选择的位置。
+     */
+    suspend fun exportShared(
+        item: VaultItem,
+        masterKey: SecretKey,
+        sharePassword: CharArray,
+        targetDirUri: Uri,
+        fileName: String,
+        onProgress: (Float) -> Unit = {}
+    ): Result<Uri> = withContext(Dispatchers.IO) {
+        var tempFile: File? = null
+        try {
+            val meta = item.meta ?: error("无法读取文件信息，请返回列表刷新后重试")
+            val dir = storage.currentDir()
+
+            // 1) 用主密钥解密到应用私有缓存
+            tempFile = File(context.cacheDir, "export_${System.currentTimeMillis()}.tmp")
+            dir.openInput(item.ref).use { input ->
+                tempFile.outputStream().use { output ->
+                    JmhCryptor.decrypt(input, item.ref.size, masterKey, output) { fraction ->
+                        onProgress(fraction * 0.5f)
+                    }
+                }
+            }
+
+            // 2) 用分享密码重新加密，写入用户选择的文件夹
+            val plainSize = tempFile.length()
+            val shareMeta = meta.copy(size = plainSize)
+
+            val targetDir = DocumentFile.fromTreeUri(context, targetDirUri)
+                ?: error("无法访问所选文件夹")
+
+            val created = targetDir.createFile(MIME_BINARY, fileName)
+                ?: error("无法在所选文件夹中创建文件")
+
+            try {
+                context.contentResolver.openOutputStream(created.uri)?.use { output ->
+                    tempFile.inputStream().use { input ->
+                        JmhCryptor.encryptShared(
+                            input, plainSize, shareMeta, sharePassword, output
+                        ) { fraction ->
+                            onProgress(0.5f + fraction * 0.5f)
+                        }
+                    }
+                } ?: error("无法写入文件")
+            } catch (e: Exception) {
+                created.delete()
+                throw e
+            }
+
+            Result.success(created.uri)
+        } catch (e: Exception) {
+            Result.failure(e)
+        } finally {
+            tempFile?.delete()
+        }
+    }
+
+    // ------------------------------------------------------------ 导入分享文件
+
+    /** 导入前的文件探测结果 */
+    data class ImportProbe(
+        val meta: JmhMeta,
+        val isShareMode: Boolean,
+        val fileSize: Long
+    )
+
+    /**
+     * 读取待导入文件的头部信息，用于在界面上显示文件名等。
+     */
+    suspend fun probeImportFile(sourceUri: Uri): Result<ImportProbe> = withContext(Dispatchers.IO) {
+        try {
+            val headerInfo = context.contentResolver.openInputStream(sourceUri)?.use { input ->
+                JmhCryptor.readHeaderInfo(input)
+            } ?: error("无法读取所选文件")
+
+            Result.success(
+                ImportProbe(
+                    meta = headerInfo.meta,
+                    isShareMode = headerInfo.isShareMode,
+                    fileSize = queryFileSize(sourceUri)
+                )
+            )
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    /**
+     * 导入一个分享文件到本机金库。
+     *
+     * 流程：分享密码解密 → 本机主密钥重新加密 → 存入金库。
+     * 导入后它就成为你金库中的普通文件，之后用应用主密码即可访问。
+     */
+    suspend fun importShared(
+        sourceUri: Uri,
+        sharePassword: CharArray,
+        masterKey: SecretKey,
+        onProgress: (Float) -> Unit = {}
+    ): Result<VaultItem> = withContext(Dispatchers.IO) {
+        var tempFile: File? = null
+        try {
+            // 1) 读取头部，确认是分享文件
+            val headerInfo = context.contentResolver.openInputStream(sourceUri)?.use { input ->
+                JmhCryptor.readHeaderInfo(input)
+            } ?: error("无法读取所选文件")
+
+            if (!headerInfo.isShareMode) {
+                error("这是本机金库文件，无需导入")
+            }
+
+            val sourceSize = queryFileSize(sourceUri)
+
+            // 2) 用分享密码解密到缓存（密码错误会在此抛出）
+            tempFile = File(context.cacheDir, "import_${System.currentTimeMillis()}.tmp")
+            tempFile.outputStream().use { output ->
+                context.contentResolver.openInputStream(sourceUri)?.use { input ->
+                    JmhCryptor.decryptShared(input, sourceSize, sharePassword, output) { fraction ->
+                        onProgress(fraction * 0.5f)
+                    }
+                } ?: error("无法读取所选文件")
+            }
+
+            // 3) 用本机主密钥重新加密，存入金库
+            val plainSize = tempFile.length()
+            val meta = JmhMeta(
+                name = headerInfo.meta.name,
+                mime = headerInfo.meta.mime,
+                size = plainSize,
+                createdAt = System.currentTimeMillis()
+            )
+            val dir = storage.currentDir()
+            val vaultName = uniqueVaultName(dir, meta.name)
+            val ref = dir.writeFile(vaultName) { output ->
+                tempFile.inputStream().use { input ->
+                    JmhCryptor.encrypt(input, plainSize, meta, masterKey, output) { fraction ->
+                        onProgress(0.5f + fraction * 0.5f)
+                    }
+                }
+            }
+            Result.success(VaultItem(ref, meta))
+        } catch (e: Exception) {
+            Result.failure(e)
+        } finally {
+            tempFile?.delete()
+        }
+    }
+
     // ---------------------------------------------------------------- 文件迁移
 
     /** 迁移结果 */
@@ -263,6 +417,9 @@ class JmhRepository(private val context: Context) {
         return (name ?: "file_${System.currentTimeMillis()}") to size
     }
 
+    /** 查询文件字节数（用于进度计算） */
+    private fun queryFileSize(uri: Uri): Long = queryFileInfo(uri).second
+
     private fun guessMime(fileName: String): String {
         val ext = fileName.substringAfterLast('.', "").lowercase()
         return MimeTypeMap.getSingleton().getMimeTypeFromExtension(ext)
@@ -274,5 +431,6 @@ class JmhRepository(private val context: Context) {
 
     companion object {
         private const val PREVIEW_DIR = "preview"
+        private const val MIME_BINARY = "application/octet-stream"
     }
 }
