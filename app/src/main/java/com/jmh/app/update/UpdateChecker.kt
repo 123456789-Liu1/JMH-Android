@@ -207,11 +207,17 @@ class UpdateChecker(context: Context) {
         private const val KEY_LAST_CHECK = "last_check_time"
 
         private const val REPO_PATH = "123456789-Liu1/JMH-Android"
-        private const val RAW_URL = "https://raw.githubusercontent.com/$REPO_PATH/main/version.json"
+
+        /** 默认分支名（与仓库保持一致） */
+        private const val BRANCH = "master"
+
+        private const val RAW_URL =
+            "https://raw.githubusercontent.com/$REPO_PATH/$BRANCH/version.json"
 
         /** 版本信息源（按国内可访问性排序） */
         private val SOURCES = listOf(
-            "https://cdn.jsdelivr.net/gh/$REPO_PATH@main/version.json",
+            "https://cdn.jsdelivr.net/gh/$REPO_PATH@$BRANCH/version.json",
+            "https://fastly.jsdelivr.net/gh/$REPO_PATH@$BRANCH/version.json",
             RAW_URL,
             "https://ghproxy.net/$RAW_URL"
         )
